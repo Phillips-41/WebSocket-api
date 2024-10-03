@@ -1,20 +1,20 @@
 package com.example.coinDCXWebSocket;
 
-import com.example.coinDCXWebSocket.service.TradingService;
-import com.example.coinDCXWebSocket.websocket.CoinDCXWebSocketClient;
+
+import com.example.coinDCXWebSocket.websocket.WebSocketHandler;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 
 import java.util.Scanner;
 
+
 @SpringBootApplication
 public class CoinDcxWebSocketApplication implements CommandLineRunner {
-	@Autowired
-	private TradingService tradingService;
-	@Autowired
-	private CoinDCXWebSocketClient coinDCXWebSocketClient;
+
+
+	private double triggerPrice;
+	private final String currencyPair = "BTCUSDT";  // Default currency pair
 
 	public static void main(String[] args) {
 		SpringApplication.run(CoinDcxWebSocketApplication.class, args);
@@ -23,20 +23,23 @@ public class CoinDcxWebSocketApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		Scanner scanner = new Scanner(System.in);
+		System.out.println("Enter the trigger price for " + currencyPair + ": ");
+		triggerPrice = scanner.nextDouble();
+		System.out.println("Monitoring market data for " + currencyPair + " with trigger price: " + triggerPrice);
 
-		System.out.println("Welcome to the CoinDCX Trading CLI");
-		System.out.print("Please enter the trigger price: ");
-		double triggerPrice = scanner.nextDouble();
+		// Initialize WebSocketHandler with the currency pair and trigger price
+		WebSocketHandler webSocketHandler = new WebSocketHandler(triggerPrice, currencyPair);
+		webSocketHandler.connect();
 
-		// Simulating market price data from WebSocket (this can be replaced by real-time data)
-		double currentPrice = coinDCXWebSocketClient.getCurrentPrice();  // Example current price
-
-		System.out.println("Trigger price set: " + triggerPrice);
-		System.out.println("Current market price is: " + currentPrice);
-
-		// Call the service to prepare the order payload
-		tradingService.prepareOrderPayload(triggerPrice, currentPrice);
-
-		scanner.close();
+		// Manual cancellation logic via command-line
+		System.out.println("Enter 'cancel' to cancel the order at any time.");
+		while (true) {
+			String input = scanner.nextLine();
+			if (input.equalsIgnoreCase("cancel")) {
+				webSocketHandler.cancelOrder();
+				break;
+			}
+		}
 	}
+
 }
